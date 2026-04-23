@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XQL Search - Cortex XDR Query Library & AI Assistant</title>
+    <meta name="description" content="The ultimate XQL query library for Cortex XDR. Search, generate, and share XQL queries with AI-powered assistance.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        xql: {
+                            dark: '#0a0a0f',
+                            card: '#13131f',
+                            accent: '#6366f1',
+                            glow: '#818cf8',
+                            cyber: '#06b6d4',
+                            purple: '#8b5cf6'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px #6366f1, 0 0 10px #6366f1' },
+                            '100%': { boxShadow: '0 0 20px #6366f1, 0 0 30px #6366f1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0a0f;
+            color: #e2e8f0;
+        }
+        .glass {
+            background: rgba(19, 19, 31, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+        }
+        .query-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+        }
+        .query-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.2);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .code-block {
+            background: #0f0f1a;
+            border: 1px solid #1e1e2e;
+        }
+        .syntax-keyword { color: #c678dd; }
+        .syntax-function { color: #61afef; }
+        .syntax-string { color: #98c379; }
+        .syntax-comment { color: #5c6370; font-style: italic; }
+        .syntax-operator { color: #56b6c2; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #818cf8;
+        }
+        
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-cyan-400 rounded-lg flex items-center justify-center font-bold text-white font-mono">X</div>
+                    <span class="text-xl font-bold tracking-tight">XQL<span class="text-indigo-400">Search</span></span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#queries" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Query Library</a>
+                    <a href="#ai-assistant" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">AI Assistant</a>
+                    <a href="#docs" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Documentation</a>
+                    <a href="https://github.com/yourusername/xql-search" target="_blank" class="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        <span class="text-sm font-medium">GitHub</span>
+                    </a>
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden text-gray-300 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass border-t border-white/5">
+            <div class="px-4 pt-2 pb-4 space-y-2">
+                <a href="#queries" class="block px-3 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-md">Query Library</a>
+                <a href="#ai-assistant" class="block px-3 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-md">AI Assistant</a>
+                <a href="#docs" class="block px-3 py-2 text-gray-300 hover:text-white hover:bg-white/5 rounded-md">Documentation</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 overflow-hidden grid-bg">
+        <div class="absolute inset-0 bg-gradient-to-b from-indigo-900/20 via-transparent to-transparent pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8">
+                    <div class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium">
+                        <span class="flex h-2 w-2 rounded-full bg-indigo-400 mr-2 animate-pulse"></span>
+                        Now with AI Query Generation
+                    </div>
+                    <h1 class="text-5xl lg:text-7xl font-bold leading-tight">
+                        Master <span class="gradient-text">XQL</span><br>
+                        Queries
+                    </h1>
+                    <p class="text-xl text-gray-400 max-w-lg leading-relaxed">
+                        The ultimate library for Cortex XDR XQL queries. Search hundreds of community-driven detection rules, or generate custom queries with our AI assistant.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#queries" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all hover:scale-105 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <span>Browse Queries</span>
+                        </a>
+                        <a href="#ai-assistant" class="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg font-semibold transition-all flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>AI Assistant</span>
+                        </a>
+                    </div>
+                    <div class="flex items-center space-x-6 text-sm text-gray-500">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>500+ Queries</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Open Source</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>AI Powered</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hero Mascot/Illustration -->
+                <div class="relative animate-float hidden lg:block">
+                    <div class="relative w-full aspect-square">
+                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full blur-3xl opacity-20 animate-pulse-slow"></div>
+                        <svg viewBox="0 0 400 400" class="w-full h-full drop-shadow-2xl" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Cyber Shield Background -->
+                            <path d="M200 40L360 120V200C360 280 200 360 200 360C200 360 40 280 40 200V120L200 40Z" fill="#13131f" stroke="#6366f1" stroke-width="3"/>
+                            <path d="M200 60L340 130V200C340 270 200 340 200 340C200 340 60 270 60 200V130L200 60Z" fill="#0a0a0f" stroke="#06b6d4" stroke-width="2" stroke-opacity="0.5"/>
+                            
+                            <!-- XQL Text on Headband -->
+                            <rect x="120" y="140" width="160" height="40" rx="5" fill="#6366f1" transform="rotate(-5 200 160)"/>
+                            <text x="200" y="170" text-anchor="middle" fill="white" font-family="JetBrains Mono" font-weight="bold" font-size="24" transform="rotate(-5 200 160)">XQL</text>
+                            
+                            <!-- Eyes -->
+                            <ellipse cx="160" cy="200" rx="25" ry="30" fill="#0a0a0f" stroke="#6366f1" stroke-width="2"/>
+                            <ellipse cx="240" cy="200" rx="25" ry="30" fill="#0a0a0f" stroke="#6366f1" stroke-width="2"/>
+                            <circle cx="160" cy="200" r="10" fill="#06b6d4" class="animate-pulse"/>
+                            <circle cx="240" cy="200" r="10" fill="#06b6d4" class="animate-pulse"/>
+                            
+                            <!-- Mask -->
+                            <path d="M130 230 Q200 260 270 230 L270 250 Q200 280 130 250 Z" fill="#1e1e2e" stroke="#6366f1" stroke-width="2"/>
+                            
+                            <!-- Code Lines -->
+                            <rect x="140" y="280" width="120" height="4" rx="2" fill="#06b6d4" opacity="0.6"/>
+                            <rect x="150" y="290" width="100" height="4" rx="2" fill="#6366f1" opacity="0.6"/>
+                            <rect x="160" y="300" width="80" height="4" rx="2" fill="#8b5cf6" opacity="0.6"/>
+                            
+                            <!-- Decorative Elements -->
+                            <circle cx="100" cy="100" r="8" fill="#06b6d4" opacity="0.5"/>
+                            <circle cx="300" cy="120" r="6" fill="#6366f1" opacity="0.5"/>
+                            <circle cx="320" cy="280" r="10" fill="#8b5cf6" opacity="0.3"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search & Filter Section -->
+    <section id="queries" class="py-12 border-y border-white/5 bg-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+                <div class="relative flex-1 w-full max-w-2xl">
+                    <input type="text" id="search-input" placeholder="Search XQL queries (e.g., 'lateral movement', 'powershell', 'registry')..." 
+                           class="w-full pl-12 pr-4 py-4 bg-xql-card border border-white/10 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white placeholder-gray-500 transition-all">
+                    <svg class="absolute left-4 top-4 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto" id="category-filters">
+                    <button class="filter-btn active px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium whitespace-nowrap transition-all" data-category="all">All</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium whitespace-nowrap transition-all" data-category="threat-hunting">Threat Hunting</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium whitespace-nowrap transition-all" data-category="detection">Detection</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium whitespace-nowrap transition-all" data-category="forensics">Forensics</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium whitespace-nowrap transition-all" data-category="compliance">Compliance</button>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between text-sm text-gray-400">
+                <span id="results-count">Showing 6 queries</span>
+                <div class="flex items-center space-x-2">
+                    <span>Sort by:</span>
+                    <select id="sort-select" class="bg-transparent border-none text-white focus:outline-none cursor-pointer">
+                        <option value="newest">Newest</option>
+                        <option value="popular">Most Popular</option>
+                        <option value="name">Name</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Query Cards Grid -->
+    <section class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="queries-grid">
+                <!-- Query Card 1 -->
+                <article class="query-card bg-xql-card rounded-xl overflow-hidden group cursor-pointer" data-category="threat-hunting" data-name="suspicious powershell downloads">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold border border-purple-500/20">Threat Hunting</span>
+                            <button class="text-gray-500 hover:text-white transition-colors copy-btn" onclick="event.stopPropagation(); copyQuery(this)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        </div>
+                        <h3 class="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">Suspicious PowerShell Downloads</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2">Detects PowerShell processes downloading content from external URLs using Invoke-WebRequest or similar methods.</p>
+                        <div class="code-block rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                            <pre><code><span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_process_image_name) <span class="syntax-operator">=</span> <span class="syntax-string">"powershell.exe"</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_process_image_command_line) <span class="syntax-operator">contains</span> <span class="syntax-string">"invoke-webrequest"</span> <span class="syntax-keyword">or</span> <span class="syntax-function">lowercase</span>(action_process_image_command_line) <span class="syntax-operator">contains</span> <span class="syntax-string">"iwr"</span></code></pre>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-white/5 text-sm text-gray-500">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>2d ago</span>
+                                </span>
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>1.2k</span>
+                                </span>
+                            </div>
+                            <span class="text-indigo-400 font-medium">View →</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Query Card 2 -->
+                <article class="query-card bg-xql-card rounded-xl overflow-hidden group cursor-pointer" data-category="detection" data-name="lsass memory access">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-semibold border border-cyan-500/20">Detection</span>
+                            <button class="text-gray-500 hover:text-white transition-colors copy-btn" onclick="event.stopPropagation(); copyQuery(this)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        </div>
+                        <h3 class="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">LSASS Memory Access</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2">Detects suspicious access to LSASS process memory, often indicative of credential dumping attacks like Mimikatz.</p>
+                        <div class="code-block rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                            <pre><code><span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(event_type) <span class="syntax-operator">=</span> <span class="syntax-string">"process injection"</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_process_image_name) <span class="syntax-operator">=</span> <span class="syntax-string">"lsass.exe"</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(actor_process_image_name) <span class="syntax-operator">!=</span> <span class="syntax-string">"svchost.exe"</span></code></pre>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-white/5 text-sm text-gray-500">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>5d ago</span>
+                                </span>
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>3.4k</span>
+                                </span>
+                            </div>
+                            <span class="text-indigo-400 font-medium">View →</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Query Card 3 -->
+                <article class="query-card bg-xql-card rounded-xl overflow-hidden group cursor-pointer" data-category="forensics" data-name="rare parent child process">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 text-xs font-semibold border border-orange-500/20">Forensics</span>
+                            <button class="text-gray-500 hover:text-white transition-colors copy-btn" onclick="event.stopPropagation(); copyQuery(this)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        </div>
+                        <h3 class="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">Rare Parent-Child Process</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2">Identifies unusual parent-child process relationships that may indicate code execution or persistence mechanisms.</p>
+                        <div class="code-block rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                            <pre><code><span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(event_type) <span class="syntax-operator">=</span> <span class="syntax-string">"process execution"</span>
+| <span class="syntax-keyword">comp</span> <span class="syntax-function">count</span>(action_process_image_name) <span class="syntax-keyword">as</span> execution_count <span class="syntax-keyword">by</span> actor_process_image_name, action_process_image_name
+| <span class="syntax-keyword">filter</span> execution_count <span class="syntax-operator"><</span> <span class="syntax-string">5</span></code></pre>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-white/5 text-sm text-gray-500">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>1w ago</span>
+                                </span>
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>890</span>
+                                </span>
+                            </div>
+                            <span class="text-indigo-400 font-medium">View →</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Query Card 4 -->
+                <article class="query-card bg-xql-card rounded-xl overflow-hidden group cursor-pointer" data-category="compliance" data-name="usb device usage">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-semibold border border-green-500/20">Compliance</span>
+                            <button class="text-gray-500 hover:text-white transition-colors copy-btn" onclick="event.stopPropagation(); copyQuery(this)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        </div>
+                        <h3 class="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">USB Device Usage Audit</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2">Tracks USB device connections and file operations for data loss prevention and compliance monitoring.</p>
+                        <div class="code-block rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                            <pre><code><span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(event_type) <span class="syntax-operator">=</span> <span class="syntax-string">"removable storage"</span>
+| <span class="syntax-keyword">fields</span> <span class="syntax-function">device_name</span>, <span class="syntax-function">action_device_product_id</span>, <span class="syntax-function">action_device_vendor_id</span>, <span class="syntax-function">action_file_name</span>
+| <span class="syntax-keyword">sort</span> <span class="syntax-keyword">desc</span> <span class="syntax-keyword">by</span> <span class="syntax-function">_time</span></code></pre>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-white/5 text-sm text-gray-500">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>3d ago</span>
+                                </span>
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>567</span>
+                                </span>
+                            </div>
+                            <span class="text-indigo-400 font-medium">View →</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Query Card 5 -->
+                <article class="query-card bg-xql-card rounded-xl overflow-hidden group cursor-pointer" data-category="threat-hunting" data-name="wmi persistence">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold border border-purple-500/20">Threat Hunting</span>
+                            <button class="text-gray-500 hover:text-white transition-colors copy-btn" onclick="event.stopPropagation(); copyQuery(this)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        </div>
+                        <h3 class="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">WMI Persistence Detection</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2">Hunts for WMI event subscription persistence mechanisms used by advanced threat actors.</p>
+                        <div class="code-block rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                            <pre><code><span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_process_image_name) <span class="syntax-operator">in</span> (<span class="syntax-string">"wmiprvse.exe"</span>, <span class="syntax-string">"scrcons.exe"</span>)
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_process_image_command_line) <span class="syntax-operator">contains</span> <span class="syntax-string">"activescripteventconsumer"</span> <span class="syntax-keyword">or</span> <span class="syntax-function">lowercase</span>(action_process_image_command_line) <span class="syntax-operator">contains</span> <span class="syntax-string">"commandlineeventconsumer"</span></code></pre>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-white/5 text-sm text-gray-500">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>1w ago</span>
+                                </span>
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>2.1k</span>
+                                </span>
+                            </div>
+                            <span class="text-indigo-400 font-medium">View →</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Query Card 6 -->
+                <article class="query-card bg-xql-card rounded-xl overflow-hidden group cursor-pointer" data-category="detection" data-name="kerberoasting detection">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-semibold border border-cyan-500/20">Detection</span>
+                            <button class="text-gray-500 hover:text-white transition-colors copy-btn" onclick="event.stopPropagation(); copyQuery(this)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        </div>
+                        <h3 class="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">Kerberoasting Detection</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2">Detects potential Kerberoasting attacks by monitoring for unusual TGS ticket requests.</p>
+                        <div class="code-block rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                            <pre><code><span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(event_type) <span class="syntax-operator">=</span> <span class="syntax-string">"kerberos authentication"</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_kerberos_ticket_encryption_type) <span class="syntax-operator">=</span> <span class="syntax-string">"rc4-hmac"</span>
+| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_kerberos_ticket_type) <span class="syntax-operator">=</span> <span class="syntax-string">"service ticket"</span></code></pre>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-white/5 text-sm text-gray-500">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>4d ago</span>
+                                </span>
+                                <span class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>1.8k</span>
+                                </span>
+                            </div>
+                            <span class="text-indigo-400 font-medium">View →</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="mt-12 text-center">
+                <button id="load-more" class="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white font-medium transition-all">
+                    Load More Queries
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Assistant Section -->
+    <section id="ai-assistant" class="py-20 bg-gradient-to-b from-indigo-900/10 to-transparent border-y border-white/5">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-medium mb-4">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    AI Powered
+                </div>
+                <h2 class="text-4xl font-bold mb-4">Generate XQL with <span class="gradient-text">AI</span></h2>
+                <p class="text-gray-400 text-lg">Describe what you want to detect in natural language, and our AI will generate the perfect XQL query for you.</p>
+            </div>
+
+            <div class="glass rounded-2xl p-1 border border-indigo-500/20">
+                <div class="bg-xql-card rounded-xl p-6 space-y-6">
+                    <div class="flex items-center space-x-2 text-sm text-gray-400 mb-4">
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span>AI Assistant Online</span>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <textarea id="ai-input" rows="3" placeholder="e.g., 'Detect when a user downloads files from GitHub and then executes them within 5 minutes'" 
+                                  class="w-full bg-black/30 border border-white/10 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none font-sans"></textarea>
+                        
+                        <div class="flex flex-wrap gap-2">
+                            <button class="suggestion-chip px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-gray-300 transition-colors" onclick="setSuggestion('Detect suspicious PowerShell encoded commands')">Suspicious PowerShell</button>
+                            <button class="suggestion-chip px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-gray-300 transition-colors" onclick="setSuggestion('Find lateral movement using SMB')">Lateral Movement</button>
+                            <button class="suggestion-chip px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-gray-300 transition-colors" onclick="setSuggestion('Detect DLL sideloading attempts')">DLL Sideloading</button>
+                            <button class="suggestion-chip px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-gray-300 transition-colors" onclick="setSuggestion('Monitor for scheduled task creation')">Scheduled Tasks</button>
+                        </div>
+
+                        <button onclick="generateQuery()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 group">
+                            <svg class="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>Generate XQL Query</span>
+                        </button>
+                    </div>
+
+                    <!-- AI Output Area -->
+                    <div id="ai-output" class="hidden space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-400">Generated Query:</span>
+                            <button onclick="copyGeneratedQuery()" class="text-sm text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                        <div class="code-block rounded-lg p-4 font-mono text-sm overflow-x-auto border border-indigo-500/30 bg-black/50">
+                            <pre id="generated-code" class="whitespace-pre-wrap break-words"></pre>
+                        </div>
+                        <div id="translation-meta"></div>
+                        <div class="flex gap-2">
+                            <button onclick="refineQuery('optimize')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors">Optimize</button>
+                            <button onclick="refineQuery('explain')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors">Explain</button>
+                            <button onclick="refineQuery('add-comments')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors">Add Comments</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all group">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Curated Library</h3>
+                    <p class="text-gray-400">Hundreds of community-vetted XQL queries for threat hunting, detection, and forensics.</p>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-all group">
+                    <div class="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">AI Generation</h3>
+                    <p class="text-gray-400">Natural language to XQL translation. Describe your detection logic, get production-ready queries.</p>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-purple-500/30 transition-all group">
+                    <div class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Easy Integration</h3>
+                    <p class="text-gray-400">One-click copy, export to CSV, or integrate with your Cortex XDR API workflows.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 bg-black/20 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <div class="col-span-2">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-cyan-400 rounded-lg flex items-center justify-center font-bold text-white font-mono">X</div>
+                        <span class="text-xl font-bold">XQL<span class="text-indigo-400">Search</span></span>
+                    </div>
+                    <p class="text-gray-400 mb-4 max-w-sm">The open-source XQL query library for Cortex XDR. Built by the community, for the community.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Query Library</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">AI Assistant</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">API Reference</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Community</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Submit Query</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contributors</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Discord</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">GitHub Discussions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+                <p>&copy; 2026 XQL Search. Open source under MIT License.</p>
+                <p class="mt-2 md:mt-0">Not affiliated with Palo Alto Networks</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-indigo-600 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="toast-message">Copied to clipboard!</span>
+    </div>
+
+    <script>
+        const BACKEND_API_URL = "https://query-to-xql-backend.onrender.com";
+
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Search and Filter Functionality
+        const searchInput = document.getElementById('search-input');
+        const categoryBtns = document.querySelectorAll('.filter-btn');
+        const queryCards = document.querySelectorAll('.query-card');
+        const resultsCount = document.getElementById('results-count');
+        let currentCategory = 'all';
+
+        function filterQueries() {
+            const searchTerm = searchInput.value.toLowerCase();
+            let visibleCount = 0;
+
+            queryCards.forEach(card => {
+                const name = card.dataset.name.toLowerCase();
+                const category = card.dataset.category;
+                const content = card.textContent.toLowerCase();
+                
+                const matchesSearch = name.includes(searchTerm) || content.includes(searchTerm);
+                const matchesCategory = currentCategory === 'all' || category === currentCategory;
+
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                    // Add fade in animation
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                    }, 50);
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            resultsCount.textContent = `Showing ${visibleCount} quer${visibleCount === 1 ? 'y' : 'ies'}`;
+        }
+
+        searchInput.addEventListener('input', filterQueries);
+
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryBtns.forEach(b => {
+                    b.classList.remove('bg-indigo-600', 'text-white');
+                    b.classList.add('bg-white/5', 'text-gray-300');
+                });
+                btn.classList.remove('bg-white/5', 'text-gray-300');
+                btn.classList.add('bg-indigo-600', 'text-white');
+                
+                currentCategory = btn.dataset.category;
+                filterQueries();
+            });
+        });
+
+        // Copy Functionality
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function copyQuery(btn) {
+            const codeBlock = btn.closest('.query-card').querySelector('code');
+            const text = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Query copied to clipboard!');
+            });
+        }
+
+        function copyGeneratedQuery() {
+            const code = document.getElementById('generated-code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Generated query copied!');
+            });
+        }
+
+        // AI Assistant Functionality
+        function setSuggestion(text) {
+            document.getElementById('ai-input').value = text;
+        }
+
+        async function generateQuery() {
+            const input = document.getElementById('ai-input').value;
+            if (!input.trim()) {
+                showToast('Please enter a description first');
+                return;
+            }
+
+            const outputDiv = document.getElementById('ai-output');
+            const codeBlock = document.getElementById('generated-code');
+            const metaDiv = document.getElementById('translation-meta');
+            const btn = document.querySelector('button[onclick="generateQuery()"]');
+            const originalText = btn.innerHTML;
+
+            btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Generating...</span>';
+            btn.disabled = true;
+
+            outputDiv.classList.remove('hidden');
+            codeBlock.textContent = 'Generating...';
+            metaDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: input })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                codeBlock.textContent = data.xql || 'No XQL returned.';
+
+                const assumptions = (data.assumptions || []).length
+                    ? data.assumptions.map(a => `<li>${a}</li>`).join('')
+                    : '<li>None</li>';
+
+                const unsupported = (data.unsupported_items || []).length
+                    ? data.unsupported_items.map(u => `<li>${u}</li>`).join('')
+                    : '<li>None</li>';
+
+                metaDiv.innerHTML = `
+                    <div class="mt-4 p-4 rounded-lg bg-black/30 border border-white/10 space-y-3 text-sm text-gray-300">
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+                                Language: ${data.detected_language || 'unknown'}
+                            </span>
+                            <span class="px-2 py-1 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+                                Confidence: ${data.confidence || 'unknown'}
+                            </span>
+                            <span class="px-2 py-1 rounded ${data.manual_review_required ? 'bg-orange-500/10 border border-orange-500/20 text-orange-300' : 'bg-green-500/10 border border-green-500/20 text-green-300'}">
+                                ${data.manual_review_required ? 'Manual review recommended' : 'Ready to review'}
+                            </span>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold text-white mb-1">Assumptions</p>
+                            <ul class="list-disc list-inside text-gray-400">${assumptions}</ul>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold text-white mb-1">Unsupported items</p>
+                            <ul class="list-disc list-inside text-gray-400">${unsupported}</ul>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                codeBlock.textContent = `Error connecting to backend: ${error.message}`;
+                metaDiv.innerHTML = `
+                    <div class="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-300">
+                        Failed to reach backend or parse response.
+                    </div>
+                `;
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function refineQuery(action) {
+            showToast(`${action.replace('-', ' ')} is coming soon`);
+        }
+    </script>
+</body>
+</html>
