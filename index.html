@@ -508,8 +508,9 @@
                             </button>
                         </div>
                         <div class="code-block rounded-lg p-4 font-mono text-sm overflow-x-auto border border-indigo-500/30 bg-black/50">
-                            <pre id="generated-code"></pre>
+                            <pre id="generated-code" class="whitespace-pre-wrap break-words"></pre>
                         </div>
+                        <div id="translation-meta"></div>
                         <div class="flex gap-2">
                             <button onclick="refineQuery('optimize')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors">Optimize</button>
                             <button onclick="refineQuery('explain')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors">Explain</button>
@@ -604,6 +605,8 @@
     </div>
 
     <script>
+        const BACKEND_API_URL = "https://query-to-xql-backend.onrender.com";
+
         // Mobile Menu Toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -696,7 +699,7 @@
             document.getElementById('ai-input').value = text;
         }
 
-        function generateQuery() {
+        async function generateQuery() {
             const input = document.getElementById('ai-input').value;
             if (!input.trim()) {
                 showToast('Please enter a description first');
@@ -705,24 +708,82 @@
 
             const outputDiv = document.getElementById('ai-output');
             const codeBlock = document.getElementById('generated-code');
-            
-            // Simulate AI generation with loading state
+            const metaDiv = document.getElementById('translation-meta');
             const btn = document.querySelector('button[onclick="generateQuery()"]');
             const originalText = btn.innerHTML;
+
             btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Generating...</span>';
             btn.disabled = true;
 
-            setTimeout(() => {
-                // Simulated AI response based on input keywords
-                let query = '';
-                const lowerInput = input.toLowerCase();
-                
-                if (lowerInput.includes('powershell') || lowerInput.includes('encoded')) {
-                    query = `<span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
-| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_process_image_name) <span class="syntax-operator">=</span> <span class="syntax-string">"powershell.exe"</span>
-| <span class="syntax-keyword">filter</span> <span class="syntax-function">lowercase</span>(action_process_image_command_line) <span class="syntax-operator">contains</span> <span class="syntax-string">"-enc"</span> <span class="syntax-keyword">or</span> <span class="syntax-function">lowercase</span>(action_process_image_command_line) <span class="syntax-operator">contains</span> <span class="syntax-string">"-encodedcommand"</span>
-| <span class="syntax-keyword">fields</span> <span class="syntax-function">agent_hostname</span>, <span class="syntax-function">action_process_image_command_line</span>, <span class="syntax-function">actor_primary_username</span>
-| <span class="syntax-keyword">sort</span> <span class="syntax-keyword">desc</span> <span class="syntax-keyword">by</span> <span class="syntax-function">_time</span>`;
-                } else if (lowerInput.includes('lateral') || lowerInput.includes('smb')) {
-                    query = `<span class="syntax-keyword">dataset</span> = <span class="syntax-string">xdr_data</span>
-| <span class="syntax-keyword">filter</span> <span class="syntax
+            outputDiv.classList.remove('hidden');
+            codeBlock.textContent = 'Generating...';
+            metaDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: input })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                codeBlock.textContent = data.xql || 'No XQL returned.';
+
+                const assumptions = (data.assumptions || []).length
+                    ? data.assumptions.map(a => `<li>${a}</li>`).join('')
+                    : '<li>None</li>';
+
+                const unsupported = (data.unsupported_items || []).length
+                    ? data.unsupported_items.map(u => `<li>${u}</li>`).join('')
+                    : '<li>None</li>';
+
+                metaDiv.innerHTML = `
+                    <div class="mt-4 p-4 rounded-lg bg-black/30 border border-white/10 space-y-3 text-sm text-gray-300">
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+                                Language: ${data.detected_language || 'unknown'}
+                            </span>
+                            <span class="px-2 py-1 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+                                Confidence: ${data.confidence || 'unknown'}
+                            </span>
+                            <span class="px-2 py-1 rounded ${data.manual_review_required ? 'bg-orange-500/10 border border-orange-500/20 text-orange-300' : 'bg-green-500/10 border border-green-500/20 text-green-300'}">
+                                ${data.manual_review_required ? 'Manual review recommended' : 'Ready to review'}
+                            </span>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold text-white mb-1">Assumptions</p>
+                            <ul class="list-disc list-inside text-gray-400">${assumptions}</ul>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold text-white mb-1">Unsupported items</p>
+                            <ul class="list-disc list-inside text-gray-400">${unsupported}</ul>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                codeBlock.textContent = `Error connecting to backend: ${error.message}`;
+                metaDiv.innerHTML = `
+                    <div class="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-300">
+                        Failed to reach backend or parse response.
+                    </div>
+                `;
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function refineQuery(action) {
+            showToast(`${action.replace('-', ' ')} is coming soon`);
+        }
+    </script>
+</body>
+</html>
